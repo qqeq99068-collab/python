@@ -1,73 +1,100 @@
-from tkinter import *
-from tkinter import messagebox
-from PIL import Image, ImageTk
+import tkinter as tk
+from tkinter import ttk, messagebox
 
-root = Tk()
-root.title("denomination Counter")
-root.configure(bg="light blue")
-root.geometry("650x400")
+class RestaurantOrderManagement:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("restaurant management App")
+        self.menu_items = {
+            "French Fries": 2,
+            "lunch meal": 2,
+            "Burger": 3,
+            "Pizza": 4,
+            "drink": 1,
+            "cheese Burger": 2.5,
+        }
+        self.exchange_rate = 82
+        self.setup_background(root)
+        frame = ttk.Frame(root)
+        frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        ttk.Label(frame, text="Restaurant Order Management", font=("Arial", 20, "bold")).grid(row=0, columnspan=3, padx=10, pady=10)
+        self.menu_labels = {}
+        self.menu_quantity = {}
+        for i, (item, price) in enumerate(self.menu_items.items(), start=1):
+            label = ttk.Label(
+                frame, text=f"{item} (${price}):", font=("Arial", 12)
+            )
+            label.grid(row=i, column=0, padx=10, pady=5)
+            self.menu_labels[item] = label
+            quantity_entry = ttk.Entry(frame, width=5)
+            quantity_entry.grid(row=i, column=1, padx=10, pady=5)
+            self.menu_quantity[item] = quantity_entry
+        self.currency_var = tk.StringVar()
+        ttk.Label(
+            frame,
+            text="currency",
+            font=("Arial", 12)
+        ).grid(
+            row=len(self.menu_items)+1,
+            column=0,
+            padx=10,
+            pady=5
+        )
+        currency_dropdown = ttk.Combobox(
+            frame,
+            textvariable=self.currency_var,
+            state="readonly",
+            width=18,
+            values=["USD", "PKR"]
+        )
+        currency_dropdown.grid(
+            row=len(self.menu_items)+1,
+            column=1,
+            padx=10,
+            pady=5
+        )
+        currency_dropdown.current(0)
+        self.currency_var.trace("w", self.update_prices)
+        order_button = ttk.Button(frame, text="Place Order", command=self.place_order)
+        order_button.grid(row=len(self.menu_items)+2, columnspan=3, padx=10, pady=10)
 
-upload = Image.open("stack-money-cartoon-white-56217774.jpg")
-upload = upload.resize((300, 300))
-image = ImageTk.PhotoImage(upload)
-label = Label(root, image=image, bg="light blue")
-label.place(x=180, y=20)
+    def setup_background(self, root):
+        bg_width, bg_height = 800, 600
+        canvas = tk.Canvas(root, width=bg_width, height=bg_height)
+        canvas.pack()
+        original_image = tk.PhotoImage(file="Bg.png")
+        background_image = original_image.subsample(max(1, original_image.width() // bg_width), max(1, original_image.height() // bg_height))
+        canvas.create_image(0, 0, anchor=tk.NW, image=background_image)
+        canvas.image = background_image
 
-label1 = Label(root,
-               text="Hey! Welcome to the denomination counter",
-               bg="light blue",
-)
-label1.place(relx=0.5, y=340, anchor=CENTER)
-
-def msg():
-    MsgBox = messagebox.askquestion("Alert.", "do you want to calculate the denomination?")
-    if MsgBox == "yes":
-        topwin()
-
-button1 = Button(root, text="Click here to start", command=msg, bg="brown", fg="white")
-button1.place(x=260, y=370)
-
-def topwin():
-    top = Toplevel()
-    top.title("denomination Counter")
-    top.configure(bg="light grey")
-    top.geometry("400x300")
-    label2 = Label(top, text="Enter the amount", bg="light blue")
-    label2.place(x=150, y=50)
-    entry1 = Entry(top)
-    lbl1 = Label(top, text="here are the number of notes for denomination", bg="light blue")
-    l1 = Label(top, text="2000", bg="light blue")
-    l2 = Label(top, text="500", bg="light blue")
-    l3 = Label(top, text="100", bg="light blue")
-    t1 = Entry(top)
-    t2 = Entry(top)
-    t3 = Entry(top)
-    def calculator():
-        try:
-            amount = int(entry1.get())
-            note2000 = amount // 2000
-            amount %= 2000
-            note500 = amount // 500
-            amount %= 500
-            note100 = amount // 100
-            t1.delete(0, END)
-            t2.delete(0, END)
-            t3.delete(0, END)
-            t1.insert(0, str(note2000))
-            t2.insert(0, str(note500))
-            t3.insert(0, str(note100))
-        except ValueError:
-            messagebox.showerror("Error", "Please enter a valid number amount.")
-    btn = Button(top, text="Calculate", command=calculator, bg="brown", fg="white")
-    label2.place(x=230, y=50)
-    entry1.place(x=200, y=80)
-    btn.place(x=240, y=120)
-    lbl1.place(x=140, y=170)
-    l1.place(x=180, y=200)
-    t1.place(x=270, y=200)
-    l2.place(x=180, y=230)
-    t2.place(x=270, y=230)
-    l3.place(x=180, y=260)
-    t3.place(x=270, y=260)
-
-root.mainloop()
+    def update_prices(self, *args):
+        currency = self.currency_var.get()
+        symbol = "$" if currency == "USD" else "Rs."
+        rate = self.exchange_rate if currency == "PKR" else 1
+        for item, price in self.menu_items.items():
+            converted_price = price * rate
+            self.menu_labels[item].config(text=f"{item} ({symbol}{converted_price}):")
+    def place_order(self):
+        total_cost = 0
+        order_summary = "Order Summary:\n"
+        currency = self.currency_var.get()
+        symbol = "$" if currency == "USD" else "Rs."
+        rate = self.exchange_rate if currency == "PKR" else 1
+        for item, entry in self.menu_quantity.items():
+            quantity= entry.get()
+            if quantity.isdigit():
+                quantity = int(quantity)
+                if quantity > 0:
+                    item_cost = self.menu_items[item] * quantity * rate
+                    total_cost += item_cost
+                    order_summary += f"{item} x {quantity} = {symbol}{item_cost}\n"
+                    if total_cost > 0:
+                        order_summary += f"Total Cost: {symbol}{total_cost}"
+                        messagebox.showinfo("Order Placed", order_summary)
+                    else:
+                        messagebox.showwarning("No Items", "Please enter quantity for at least one item.")
+if __name__ == "__main__":
+    root = tk.Tk()
+    app= RestaurantOrderManagement(root)
+    root.geometry("800x600")
+    root.mainloop()
